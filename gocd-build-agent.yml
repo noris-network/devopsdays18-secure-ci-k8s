@@ -1,0 +1,49 @@
+# deployment for a build gocd agent that **does** build docker images
+# remember to specify the IP normal of the gocd-master node or the specific
+# LoadBalancer in a clustered setup with more than one master.
+
+apiVersion: "apps/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "gocd-build-agent"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: "gocd-build-agent"
+  template:
+    metadata:
+      labels:
+        app: "gocd-build-agent"
+    spec:
+      containers:
+      - name: "gocd-build-agent"
+        image: "local/gocd-build-agent:v1"
+        imagePullPolicy: Always
+        volumeMounts:
+        - mountPath: /var/run/docker.sock # directory location on container
+          name: docker-socket
+        env:
+          - name: "GO_SERVER_URL"
+            value: "https://$(GOCD_SERVICE_HOST):$(GOCD_SERVICE_PORT_HTTPS)/go/"
+      # this makes it possible that the pod runs on the dedicated build hosts
+      tolerations:
+        - key: "buildhost"
+          effect: "NoSchedule"
+          operator: "Equal"
+          value: "true"
+      # this denies it to run this pod on hosts that do NOT have the buildhost
+      # label
+      volumes:
+      - name: docker-socket
+        hostPath:
+          path: /var/run/docker.sock # directory location on host
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "kubernetes.io/role"
+                operator: "In"
+                values:
+                - "buildhost"

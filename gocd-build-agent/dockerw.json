@@ -1,0 +1,7 @@
+{
+  "allowed": [
+    "/usr/local/bin/docker build .*",
+    "/usr/local/bin/docker push .*",
+    "/usr/local/bin/docker version"
+  ]
+}

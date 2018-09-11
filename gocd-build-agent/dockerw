@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+
+import argparse
+import errno
+import json
+import os
+import re
+import sys
+
+DOCKER_BINARY = "/usr/local/bin/docker"
+DOCKERW_CONFIG = "/etc/dockerw.json"
+
+
+def main():
+    # parse command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('command', nargs=argparse.REMAINDER,
+                        help='the Docker command to execute')
+    args = parser.parse_args()
+
+    if len(args.command) == 0:
+        print("No command specified to pass to Docker! Exiting...",
+              file=sys.stderr)
+        sys.exit(errno.EINVAL)
+
+    # read config file
+    with open(DOCKERW_CONFIG, 'r') as data_file:
+        config = json.load(data_file)
+
+    # iterate over allowed patterns and check, terminate if not allowed
+    docker_cmd = " ".join((DOCKER_BINARY, *args.command))
+    for allowed in config["allowed"]:
+        if re.match(allowed, docker_cmd):
+            # found allowed pattern, execute command directly.
+            os.execvp(DOCKER_BINARY, [DOCKER_BINARY] + args.command)
+
+    print("specified Docker command is not allowed! Exiting...",
+          file=sys.stderr)
+    sys.exit(errno.EINVAL)
+
+
+if __name__ == "__main__":
+    main()

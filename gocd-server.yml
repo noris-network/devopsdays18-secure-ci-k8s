@@ -1,0 +1,44 @@
+# deployment for gocd server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gocd-server
+  labels:
+    app: gocd-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gocd-server
+  template:
+    metadata:
+      labels:
+        app: gocd-server
+    spec:
+      containers:
+      - name: gocd-server
+        image: "gocd/gocd-server:v18.9.0"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8153
+        - containerPort: 8154
+
+---
+
+# service for exposing gocd web interface, the type may be changed to something
+# more advanced in future (i.e. LoadBalancer with auto scaling)
+apiVersion: v1
+kind: Service
+metadata:
+  name: gocd
+spec:
+  selector:
+    app: gocd-server
+  type: NodePort
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8153
+  - name: https
+    protocol: TCP
+    port: 8154

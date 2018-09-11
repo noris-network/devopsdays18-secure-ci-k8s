@@ -1,0 +1,23 @@
+# deployment for a "normal" gocd agent that does **not** build docker images
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gocd-agent
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: gocd-agent
+  template:
+    metadata:
+      labels:
+        app: gocd-agent
+    spec:
+      containers:
+      - name: gocd-agent
+        image: "gocd/gocd-agent-alpine-3.5:v18.9.0"
+        imagePullPolicy: Always
+        env:
+          - name: "GO_SERVER_URL"
+            value: "https://$(GOCD_SERVICE_HOST):$(GOCD_SERVICE_PORT_HTTPS)/go/"
